@@ -175,9 +175,9 @@ export default function HomePage() {
         aria-labelledby="hero-heading"
       >
         {/* Background Image with Ken Burns Effect */}
-        <div className="absolute inset-0 -z-10" aria-hidden="true">
+        <div className="absolute inset-0 z-0" aria-hidden="true">
           <Image
-            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1920&h=1080&fit=crop"
+            src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&h=1080&fit=crop"
             alt=""
             fill
             priority
@@ -185,12 +185,12 @@ export default function HomePage() {
             sizes="100vw"
           />
           {/* Subtle overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-ink/10 to-ink/60" />
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-ink/40 via-ink/10 to-ink/60" />
           {/* Noise texture for depth */}
-          <div className="absolute inset-0 bg-noise opacity-[0.03]" />
+          <div className="absolute inset-0 z-20 bg-noise opacity-[0.03]" />
         </div>
 
-        <div className="container container-prose relative z-10 px-6 py-20 text-center stagger">
+        <div className="container container-prose relative z-30 px-6 py-20 text-center stagger">
           <p className="overline text-gold-400 animate-fade-in" style={{ animationDelay: '0ms' }}>
             Autumn Winter 2024
           </p>
