@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getProductById, getRelatedProducts, type Product } from '@/lib/data/products'
+import { getProductById, getRelatedProducts, getAllProducts } from '@/lib/db/queries/products'
+import { toStorefrontProduct, getStockStatus, type StorefrontProduct } from '@/lib/db/types/products'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -16,33 +17,33 @@ function formatPrice(price: number): string {
   }).format(price)
 }
 
-function getStockStatus(stock: number): { label: string; className: string } {
-  if (stock === 0) return { label: 'Out of Stock', className: 'badge-ink' }
-  if (stock <= 5) return { label: `Only ${stock} left`, className: 'badge-gold' }
-  if (stock <= 15) return { label: 'Low Stock', className: 'badge-gold' }
-  return { label: 'In Stock', className: 'badge-accent' }
-}
-
 export async function generateStaticParams() {
-  const products = await import('@/lib/data/products').then(m => m.getAllProducts())
-  return products.map((product) => ({ id: product.id }))
+  try {
+    const products = await getAllProducts()
+    return products.map((product) => ({ id: product.id }))
+  } catch (error) {
+    console.error('Failed to fetch products for static params:', error)
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params
-  const product = getProductById(id)
+  const product = await getProductById(id)
 
   if (!product) {
     return { title: 'Product Not Found' }
   }
 
+  const storefrontProduct = toStorefrontProduct(product)
+
   return {
-    title: `${product.name} | Atelier Store`,
-    description: product.description.slice(0, 160),
+    title: `${storefrontProduct.name} | Atelier Store`,
+    description: storefrontProduct.description.slice(0, 160),
     openGraph: {
-      title: product.name,
-      description: product.description.slice(0, 160),
-      images: product.images[0],
+      title: storefrontProduct.name,
+      description: storefrontProduct.description.slice(0, 160),
+      images: storefrontProduct.images[0],
       type: 'website',
     },
   }
@@ -50,15 +51,17 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ProductPage({ params }: PageProps) {
   const { id } = await params
-  const product = getProductById(id)
+  const product = await getProductById(id)
 
   if (!product) {
     notFound()
   }
 
-  const stockStatus = getStockStatus(product.stock)
-  const relatedProducts = getRelatedProducts(product.id, 4)
-  const selectedColor = product.colors[0]
+  const storefrontProduct = toStorefrontProduct(product)
+  const stockStatus = getStockStatus(storefrontProduct.stock)
+  const relatedProducts = await getRelatedProducts(product.id, 4)
+  const relatedStorefrontProducts = relatedProducts.map(toStorefrontProduct)
+  const selectedColor = storefrontProduct.colors[0]
 
   return (
     <main id="main-content" className="min-h-screen">
@@ -72,36 +75,28 @@ export default async function ProductPage({ params }: PageProps) {
         aria-label="Breadcrumb"
         style={{ borderColor: 'rgb(217 217 217)' }}
       >
-        <div className="container container-wide px-6 py-4">
-          <ol className="inline inline-sm items-center" role="list" aria-label="Breadcrumb">
+        <div className="container container-wide px-6 py-5">
+          <ol className="breadcrumb" role="list">
             <li>
-              <Link href="/" className="nav-link-subtle text-sm">
+              <Link href="/" className="breadcrumb-link">
                 Home
               </Link>
             </li>
-            <li aria-hidden="true" className="text-neutral-400">
-              /
-            </li>
-            <li>
-              <Link href="/collections" className="nav-link-subtle text-sm">
-                Shop
-              </Link>
-            </li>
-            <li aria-hidden="true" className="text-neutral-400">
+            <li className="breadcrumb-sep" aria-hidden="true">
               /
             </li>
             <li>
               <Link
-                href={`/collections/${product.category.toLowerCase().replace(/\s+/g, '-')}`}
-                className="nav-link-subtle text-sm"
+                href={`/collections/${product.category.slug}`}
+                className="breadcrumb-link"
               >
-                {product.category}
+                {product.category.name}
               </Link>
             </li>
-            <li aria-hidden="true" className="text-neutral-400">
+            <li className="breadcrumb-sep" aria-hidden="true">
               /
             </li>
-            <li aria-current="page" className="text-ink text-sm font-medium">
+            <li className="breadcrumb-current" aria-current="page">
               {product.name}
             </li>
           </ol>
@@ -171,11 +166,11 @@ export default async function ProductPage({ params }: PageProps) {
               )}
 
               {/* Color Swatches */}
-              {product.colors.length > 1 && (
+              {storefrontProduct.colors.length > 1 && (
                 <div className="mt-8 stack-sm">
                   <p className="overline text-accent-600">Color</p>
                   <div className="inline inline-sm" role="group" aria-label="Color options">
-                    {product.colors.map((color) => (
+                    {storefrontProduct.colors.map((color) => (
                       <button
                         key={color.name}
                         className="relative w-10 h-10 rounded-full border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
@@ -204,10 +199,10 @@ export default async function ProductPage({ params }: PageProps) {
                 {/* Category & Badge */}
                 <div className="inline inline-sm items-center gap-2">
                   <Link
-                    href={`/collections/${product.category.toLowerCase().replace(/\s+/g, '-')}`}
+                    href={`/collections/${product.category.slug}`}
                     className="caption text-accent-600 hover:text-accent-700 transition-colors"
                   >
-                    {product.category}
+                    {product.category.name}
                   </Link>
                   {product.badge && (
                     <span className="badge badge-filled badge-accent">{product.badge}</span>
@@ -223,33 +218,33 @@ export default async function ProductPage({ params }: PageProps) {
                 <div className="inline inline-sm items-baseline gap-4">
                   <div className="inline inline-sm items-baseline gap-3">
                     <span className="display-sm font-display font-normal text-ink">
-                      {formatPrice(product.price)}
+                      {formatPrice(storefrontProduct.price)}
                     </span>
-                    {product.originalPrice && (
+                    {storefrontProduct.originalPrice && (
                       <span className="title-md text-neutral-400 line-through">
-                        {formatPrice(product.originalPrice)}
+                        {formatPrice(storefrontProduct.originalPrice)}
                       </span>
                     )}
                   </div>
-                  <span className={`badge badge-outline ${stockStatus.className}`}>
+                  <span className={`badge badge-outline badge-${stockStatus.variant}`}>
                     {stockStatus.label}
                   </span>
                 </div>
 
                 {/* SKU */}
-                <p className="caption text-neutral-500">SKU: {product.sku}</p>
+                <p className="caption text-neutral-500">SKU: {storefrontProduct.sku}</p>
 
                 {/* Short Description */}
                 <p className="body-md text-neutral-700 border-t border-neutral-200 pt-6" style={{ borderColor: 'rgb(217 217 217)' }}>
-                  {product.description}
+                  {storefrontProduct.description}
                 </p>
 
                 {/* Size Selection */}
-                {product.sizes.length > 0 && product.sizes[0] !== 'One Size' && (
+                {storefrontProduct.sizes.length > 0 && storefrontProduct.sizes[0] !== 'One Size' && (
                   <div className="stack-sm border-t border-neutral-200 pt-6" style={{ borderColor: 'rgb(217 217 217)' }}>
                     <p className="overline text-accent-600">Size</p>
                     <div className="inline inline-sm flex-wrap" role="group" aria-label="Size options">
-                      {product.sizes.map((size) => (
+                      {storefrontProduct.sizes.map((size) => (
                         <button
                           key={size}
                           className="btn btn-secondary btn-sm min-w-[48px] h-10 transition-all duration-200 hover:border-ink hover:bg-neutral-100 focus-visible:border-ink focus-visible:bg-neutral-100"
@@ -271,10 +266,10 @@ export default async function ProductPage({ params }: PageProps) {
                 <div className="stack-sm border-t border-neutral-200 pt-6" style={{ borderColor: 'rgb(217 217 217)' }}>
                   <button
                     className="btn btn-primary btn-lg btn-full"
-                    disabled={product.stock === 0}
-                    aria-disabled={product.stock === 0}
+                    disabled={storefrontProduct.stock === 0}
+                    aria-disabled={storefrontProduct.stock === 0}
                   >
-                    {product.stock === 0 ? 'Out of Stock' : 'Add to Bag'}
+                    {storefrontProduct.stock === 0 ? 'Out of Stock' : 'Add to Bag'}
                   </button>
                   <button className="btn btn-secondary btn-lg btn-full">
                     Buy Now
@@ -319,7 +314,7 @@ export default async function ProductPage({ params }: PageProps) {
           <div className="mt-16 lg:mt-24">
             <div className="border-t border-neutral-200" style={{ borderColor: 'rgb(217 217 217)' }} />
             <div className="mt-12 lg:mt-16">
-              <ProductTabs product={product} />
+              <ProductTabs product={storefrontProduct} />
             </div>
           </div>
 
@@ -335,7 +330,7 @@ export default async function ProductPage({ params }: PageProps) {
               </header>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                {relatedProducts.map((relatedProduct, index) => (
+                {relatedStorefrontProducts.map((relatedProduct, index) => (
                   <article
                     key={relatedProduct.id}
                     className="card card-interactive group"
@@ -391,7 +386,7 @@ export default async function ProductPage({ params }: PageProps) {
   )
 }
 
-function ProductTabs({ product }: { product: Product }) {
+function ProductTabs({ product }: { product: StorefrontProduct }) {
   const tabs = [
     { id: 'description', label: 'Description', content: product.description },
     { id: 'details', label: 'Details', content: product.details.map(d => <li key={d}>{d}</li>) },

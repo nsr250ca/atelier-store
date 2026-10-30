@@ -1,5 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { getNewArrivals, getBestsellers } from '@/lib/db/queries/products'
+import { toStorefrontProduct, type StorefrontProduct } from '@/lib/db/types/products'
 
 // Sample collection data with Unsplash images
 const collections = [
@@ -41,104 +43,6 @@ const collections = [
   },
 ]
 
-// Sample product data with Unsplash images
-interface Product {
-  id: string
-  name: string
-  price: number
-  originalPrice?: number
-  image: string
-  category: string
-  badge: string | null
-}
-
-const newArrivals: Product[] = [
-  {
-    id: 'cashmere-coat',
-    name: 'Double-Faced Cashmere Coat',
-    price: 1850,
-    image: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=1000&fit=crop',
-    category: 'Outerwear',
-    badge: 'New',
-  },
-  {
-    id: 'silk-blouse',
-    name: 'Silk Crepe de Chine Blouse',
-    price: 420,
-    image: 'https://images.unsplash.com/photo-1598554747436-c9293d6a588f?w=800&h=1000&fit=crop',
-    category: 'Tops',
-    badge: 'New',
-  },
-  {
-    id: 'wool-trousers',
-    name: 'Tailored Wool Trousers',
-    price: 380,
-    image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&h=1000&fit=crop',
-    category: 'Bottoms',
-    badge: null,
-  },
-  {
-    id: 'leather-tote',
-    name: 'Structured Leather Tote',
-    price: 1250,
-    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&h=1000&fit=crop',
-    category: 'Bags',
-    badge: 'New',
-  },
-  {
-    id: 'loafer-shoes',
-    name: 'Hand-Stitched Penny Loafers',
-    price: 580,
-    image: 'https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=800&h=1000&fit=crop',
-    category: 'Shoes',
-    badge: null,
-  },
-  {
-    id: 'cashmere-scarf',
-    name: 'Brushed Cashmere Scarf',
-    price: 295,
-    image: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=800&h=1000&fit=crop',
-    category: 'Accessories',
-    badge: 'New',
-  },
-]
-
-const bestsellers: Product[] = [
-  {
-    id: 'trench-coat',
-    name: 'Classic Cotton Trench Coat',
-    price: 1450,
-    originalPrice: 1650,
-    image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800&h=1000&fit=crop',
-    category: 'Outerwear',
-    badge: 'Bestseller',
-  },
-  {
-    id: 'cotton-shirt',
-    name: 'Organic Cotton Poplin Shirt',
-    price: 185,
-    image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&h=1000&fit=crop',
-    category: 'Tops',
-    badge: 'Bestseller',
-  },
-  {
-    id: 'leather-belt',
-    name: 'Vegetable-Tanned Leather Belt',
-    price: 145,
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&h=1000&fit=crop',
-    category: 'Accessories',
-    badge: 'Bestseller',
-  },
-  {
-    id: 'wool-sweater',
-    name: 'Merino Wool Crewneck',
-    price: 320,
-    image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&h=1000&fit=crop',
-    category: 'Knitwear',
-    badge: 'Bestseller',
-  },
-]
-
 const editorialFeatures = [
   {
     id: 'craftsmanship',
@@ -160,7 +64,14 @@ const editorialFeatures = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Fetch products from database
+  const newArrivalsDb = await getNewArrivals(6)
+  const bestsellersDb = await getBestsellers(4)
+
+  const newArrivals: StorefrontProduct[] = newArrivalsDb.map(toStorefrontProduct)
+  const bestsellers: StorefrontProduct[] = bestsellersDb.map(toStorefrontProduct)
+
   return (
     <main id="main-content" className="min-h-screen">
       {/* Hero Section - Full Screen Editorial */}
@@ -314,7 +225,7 @@ export default function HomePage() {
                 <Link href={`/products/${product.id}`} className="block" aria-label={`${product.name} - $${product.price}`}>
                   <div className="card-media aspect-product relative overflow-hidden bg-neutral-100">
                     <Image
-                      src={product.image}
+                      src={product.images[0]}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -382,7 +293,7 @@ export default function HomePage() {
                 <Link href={`/products/${product.id}`} className="block" aria-label={`${product.name} - $${product.price}`}>
                   <div className="card-media aspect-product relative overflow-hidden bg-neutral-100">
                     <Image
-                      src={product.image}
+                      src={product.images[0]}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
