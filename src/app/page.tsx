@@ -162,12 +162,7 @@ const editorialFeatures = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
-      {/* Skip Link for Accessibility */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
+    <main id="main-content" className="min-h-screen">
       {/* Hero Section - Full Screen Editorial */}
       <section
         id="hero"

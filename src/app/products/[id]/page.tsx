@@ -61,7 +61,7 @@ export default async function ProductPage({ params }: PageProps) {
   const selectedColor = product.colors[0]
 
   return (
-    <main className="min-h-screen">
+    <main id="main-content" className="min-h-screen">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -200,7 +200,7 @@ export default async function ProductPage({ params }: PageProps) {
 
             {/* Product Info - 5 columns */}
             <div className="lg:col-span-5">
-              <div className="sticky top-24 lg:top-32 space-y-6">
+              <div className="sticky top-28 lg:top-32 space-y-6">
                 {/* Category & Badge */}
                 <div className="inline inline-sm items-center gap-2">
                   <Link
