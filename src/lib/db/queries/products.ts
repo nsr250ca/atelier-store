@@ -369,6 +369,42 @@ export async function getNewArrivals(limit = 6): Promise<ProductWithRelations[]>
 }
 
 /**
+ * Get all new arrivals with pagination
+ */
+export async function getNewArrivalsPaginated(
+  options: { limit?: number; offset?: number } = {}
+): Promise<ProductWithRelations[]> {
+  const { limit = 20, offset = 0 } = options
+
+  const newProducts = await db.query.products.findMany({
+    where: and(eq(products.badge, 'New'), eq(products.isActive, true)),
+    with: {
+      category: true,
+      images: {
+        orderBy: asc(productImages.sortOrder),
+      },
+      colors: {
+        orderBy: asc(productColors.sortOrder),
+        with: {
+          images: {
+            orderBy: asc(productColorImages.sortOrder),
+          },
+        },
+      },
+      sizes: {
+        orderBy: asc(productSizes.sortOrder),
+      },
+      stock: true,
+    },
+    orderBy: desc(products.createdAt),
+    limit,
+    offset,
+  })
+
+  return newProducts.map((p) => ({ ...p, stockItems: p.stock })) as ProductWithRelations[]
+}
+
+/**
  * Get bestsellers (products with "Bestseller" badge)
  */
 export async function getBestsellers(limit = 4): Promise<ProductWithRelations[]> {
