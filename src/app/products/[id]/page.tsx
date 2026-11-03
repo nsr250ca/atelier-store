@@ -337,7 +337,7 @@ export default async function ProductPage({ params }: PageProps) {
                     style={{ animationDelay: `${index * 80}ms` }}
                   >
                     <Link
-                      href={`/products/${relatedProduct.id}`}
+                      href={`/products/${relatedProduct.slug}`}
                       className="block"
                       aria-label={`${relatedProduct.name} - ${formatPrice(relatedProduct.price)}`}
                     >
@@ -364,7 +364,7 @@ export default async function ProductPage({ params }: PageProps) {
                     <div className="card-body">
                       <p className="caption text-accent-600 mb-1">{relatedProduct.category}</p>
                       <h3 className="headline-sm font-display font-normal truncate-1 mb-2">
-                        <Link href={`/products/${relatedProduct.id}`} className="link-underline hover:text-accent-700">
+                        <Link href={`/products/${relatedProduct.slug}`} className="link-underline hover:text-accent-700">
                           {relatedProduct.name}
                         </Link>
                       </h3>

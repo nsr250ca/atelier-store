@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, boolean, integer, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -138,4 +139,69 @@ export const productStock = pgTable('product_stock', {
 }, (table) => ({
   idxProductStockVariant: uniqueIndex('idx_product_stock_variant').on(table.productId, table.colorId, table.sizeId),
   idxProductStockProductId: index('idx_product_stock_product_id').on(table.productId),
+}))
+
+// ============================================
+// RELATIONS
+// ============================================
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  products: many(products),
+}))
+
+export const productsRelations = relations(products, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id],
+  }),
+  images: many(productImages),
+  colors: many(productColors),
+  sizes: many(productSizes),
+  stock: many(productStock),
+}))
+
+export const productImagesRelations = relations(productImages, ({ one }) => ({
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
+}))
+
+export const productColorsRelations = relations(productColors, ({ one, many }) => ({
+  product: one(products, {
+    fields: [productColors.productId],
+    references: [products.id],
+  }),
+  images: many(productColorImages),
+  stock: many(productStock),
+}))
+
+export const productColorImagesRelations = relations(productColorImages, ({ one }) => ({
+  color: one(productColors, {
+    fields: [productColorImages.colorId],
+    references: [productColors.id],
+  }),
+}))
+
+export const productSizesRelations = relations(productSizes, ({ one, many }) => ({
+  product: one(products, {
+    fields: [productSizes.productId],
+    references: [products.id],
+  }),
+  stock: many(productStock),
+}))
+
+export const productStockRelations = relations(productStock, ({ one }) => ({
+  product: one(products, {
+    fields: [productStock.productId],
+    references: [products.id],
+  }),
+  color: one(productColors, {
+    fields: [productStock.colorId],
+    references: [productColors.id],
+  }),
+  size: one(productSizes, {
+    fields: [productStock.sizeId],
+    references: [productSizes.id],
+  }),
 }))

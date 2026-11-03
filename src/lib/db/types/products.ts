@@ -36,6 +36,7 @@ export type {
  */
 export interface StorefrontProduct {
   id: string
+  slug: string
   name: string
   price: number // in dollars (converted from cents)
   originalPrice?: number // in dollars
@@ -97,6 +98,7 @@ export function toStorefrontProduct(product: ProductWithRelations): StorefrontPr
 
   return {
     id: product.id,
+    slug: product.slug,
     name: product.name,
     price: product.priceCents / 100,
     originalPrice: product.originalPriceCents ? product.originalPriceCents / 100 : undefined,

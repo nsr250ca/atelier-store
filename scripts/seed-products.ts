@@ -467,28 +467,25 @@ async function seed() {
     const existingCategories = await db.query.categories.findMany()
     const existingCategoryMap = new Map(existingCategories.map((c) => [c.slug, c.id]))
 
-    const insertedCategories = await db.transaction(async (tx) => {
-      const results = []
-      for (const cat of categoryData) {
-        const existingId = existingCategoryMap.get(cat.slug)
-        if (existingId) {
-          const existing = existingCategories.find((c) => c.id === existingId)!
-          results.push(existing)
-          console.log(`  ⏭ Category already exists: ${cat.name}`)
-        } else {
-          const [inserted] = await tx
-            .insert(categories)
-            .values(cat)
-            .returning()
-          results.push(inserted)
-          console.log(`  ✓ Created category: ${cat.name}`)
-        }
+    const insertedCategories = []
+    for (const cat of categoryData) {
+      const existingId = existingCategoryMap.get(cat.slug)
+      if (existingId) {
+        const existing = existingCategories.find((c) => c.id === existingId)!
+        insertedCategories.push(existing)
+        console.log(`  ⏭ Category already exists: ${cat.name}`)
+      } else {
+        const [inserted] = await db
+          .insert(categories)
+          .values(cat)
+          .returning()
+        insertedCategories.push(inserted)
+        console.log(`  ✓ Created category: ${cat.name}`)
       }
-      return results
-    })
+    }
 
-    // Build category lookup map
-    const categoryMap = new Map(insertedCategories.map((c) => [c.slug, c.id]))
+    // Build category lookup map (keyed by name since seedProduct.category uses names)
+    const categoryMap = new Map(insertedCategories.map((c) => [c.name, c.id]))
 
     // 2. Seed products and related data
     console.log('📦 Seeding products...')
