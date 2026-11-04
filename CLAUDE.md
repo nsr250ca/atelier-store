@@ -39,12 +39,14 @@ npm run lint         # Run ESLint
 |------|---------|
 | `src/lib/db/index.ts` | Drizzle database connection (Neon HTTP driver) |
 | `src/lib/db/schema.ts` | Auth + product tables (users, sessions, accounts, verifications, categories, products, product_images, product_colors, product_color_images, product_sizes, product_stock) |
-| `src/lib/db/queries/products.ts` | Type-safe product query functions (getAllProducts, getProductById, getNewArrivals, getBestsellers, etc.) |
-| `src/lib/db/types/products.ts` | Drizzle-inferred types + storefront UI types (StorefrontProduct, StockStatusInfo) |
+| `src/lib/db/queries/products.ts` | Type-safe product query functions (getAllProducts, getProductById, getNewArrivals, getBestsellers, getCategories, getCategoriesWithCoverImages, etc.) |
+| `src/lib/db/types/products.ts` | Drizzle-inferred types + storefront UI types (StorefrontProduct, StockStatusInfo, CategoryWithCoverImage) |
 | `src/lib/auth.ts` | Better Auth config with Drizzle adapter |
 | `src/middleware.ts` | Auth middleware - attaches session to request headers |
 | `src/app/layout.tsx` | Root layout with metadata |
 | `src/app/page.tsx` | Home page - fetches new arrivals & bestsellers from DB |
+| `src/app/collections/page.tsx` | **Main collections listing page** - fetches categories with cover images from DB |
+| `src/app/collections/[slug]/page.tsx` | Individual collection page - products by category slug |
 | `src/app/products/[id]/page.tsx` | Product detail page - fetches from DB with static generation |
 | `scripts/seed-products.ts` | Database seed script for 10 products + categories |
 | `drizzle.config.ts` | Drizzle Kit config (schema location, output, dialect) |
@@ -84,6 +86,28 @@ npm run lint         # Run ESLint
 - **Product lookup**: Use `getProductById(id)` (UUID) for product detail pages — the route parameter `[id]` maps to the database `id` column (UUID), not the `slug` column
 - **Static generation**: `generateStaticParams()` returns `{ id: product.id }` using UUIDs for static path generation
 - **Data source**: All product data comes from Neon PostgreSQL via Drizzle ORM — the local `src/lib/data/products.ts` file exists but is **not used** (legacy/starter data)
+
+### Collections Feature
+
+The store includes a Collections section with two routes:
+
+- **`/collections`** - Main collections listing page (`src/app/collections/page.tsx`)
+  - Fetches all categories with product counts and cover images
+  - Cover image = first product's primary image in each category
+  - Uses `getCategoriesWithCoverImages()` query
+  - Displays responsive grid of collection cards with hover effects
+  - Includes "Shop by Category" quick-links section
+
+- **`/collections/[slug]`** - Individual collection page (`src/app/collections/[slug]/page.tsx`)
+  - Fetches products for a specific category by slug
+  - Uses `getProductsByCategory(slug)` and `getCategoryBySlug(slug)`
+  - Static generation via `generateStaticParams()` (returns empty array, uses dynamic rendering with caching)
+  - Displays product grid with pagination placeholder
+
+### Query Functions Added
+
+- `getCategoriesWithCoverImages()` - Returns all categories with product counts + first product's primary image as `coverImage`
+- Returns `CategoryWithCoverImage` type (extends `CategoryWithProductCount` with optional `coverImage: string | null`)
 
 ### Environment Variables
 Copy `.env.example` to `.env` and configure:
