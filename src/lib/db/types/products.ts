@@ -25,6 +25,13 @@ export type {
   CategoryWithProductCount,
 }
 
+/**
+ * Category with cover image for collection page
+ */
+export interface CategoryWithCoverImage extends CategoryWithProductCount {
+  coverImage: string | null
+}
+
 // ============================================
 // UI-SPECIFIC TYPES
 // These match the existing storefront component expectations

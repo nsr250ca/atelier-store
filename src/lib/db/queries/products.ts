@@ -282,6 +282,48 @@ export async function getCategories(): Promise<CategoryWithProductCount[]> {
 }
 
 /**
+ * Get all categories with their cover image (first product's primary image)
+ */
+export async function getCategoriesWithCoverImages(): Promise<Array<CategoryWithProductCount & { coverImage: string | null }>> {
+  const allCategories = await db.query.categories.findMany({
+    orderBy: asc(categories.sortOrder),
+  })
+
+  const categoriesWithImages = await Promise.all(
+    allCategories.map(async (category) => {
+      // Get product count
+      const count = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(products)
+        .where(and(eq(products.categoryId, category.id), eq(products.isActive, true)))
+
+      // Get first product with its primary image for cover
+      const firstProduct = await db.query.products.findFirst({
+        where: and(eq(products.categoryId, category.id), eq(products.isActive, true)),
+        with: {
+          images: {
+            where: eq(productImages.isPrimary, true),
+            orderBy: asc(productImages.sortOrder),
+            limit: 1,
+          },
+        },
+        orderBy: asc(products.createdAt),
+      })
+
+      const coverImage = firstProduct?.images[0]?.url ?? null
+
+      return {
+        ...category,
+        productCount: count[0]?.count ?? 0,
+        coverImage,
+      }
+    })
+  )
+
+  return categoriesWithImages
+}
+
+/**
  * Get a single category by slug with its products
  */
 export async function getCategoryBySlug(slug: string): Promise<CategoryWithProducts | undefined> {
